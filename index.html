@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>StoryShare - Write, Share, Connect</title>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <!-- React -->
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- CryptoJS -->
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+  <style>
+    /* Reset & Base Styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f7fa;
+      padding: 20px;
+    }
+    
+    /* Layout */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .app {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+      margin-bottom: 30px;
+    }
+    
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 20px;
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    /* Auth Forms */
+    .auth-container {
+      max-width: 400px;
+      margin: 50px auto;
+    }
+    
+    .auth-form {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .auth-form h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    
+    .btn {
+      display: inline-block;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    
+    .btn:hover {
+      background-color: #2980b9;
+    }
+    
+    .btn-block {
+      display: block;
+      width: 100%;
+    }
+    
+    .text-link {
+      color: #3498db;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    
+    /* Main Content */
+    .main-content {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .content-area {
+      flex: 3;
+    }
+    
+    .sidebar {
+      flex: 1;
+    }
+    
+    /* Stories */
+    .story {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid #3498db;
+    }
+    
+    .story h3 {
+      color: #3498db;
+      margin-bottom: 10px;
+    }
+    
+    .story-meta {
+      color: #7f8c8d;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    
+    .story-content {
+      margin-bottom: 15px;
+    }
+    
+    /* Story Editor */
+    .story-editor {
+      margin-bottom: 30px;
+    }
+    
+    .editor-textarea {
+      width: 100%;
+      min-height: 300px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+    
+    /* Friends */
+    .friends-list {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    
+    .friend-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    
+    /* Chat */
+    .chat-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    
+    .chat-messages {
+      height: 400px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      padding: 10px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    
+    .message {
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      border-radius: 18px;
+      max-width: 70%;
+    }
+    
+    .message-sent {
+      background-color: #3498db;
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 0;
+    }
+    
+    .message-received {
+      background-color: #ecf0f1;
+      margin-right: auto;
+      border-bottom-left-radius: 0;
+    }
+    
+    .chat-input {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .chat-input input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+    }
+    
+    .tab.active {
+      border-bottom-color: #3498db;
+      font-weight: bold;
+    }
+    
+    /* Alerts */
+    .alert {
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    
+    .alert-success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .alert-error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    // Firebase configuration (replace with your own)
+    const firebaseConfig = {
+      apiKey: "AIzaSyC4R6MK7m3HrdXjZ4W1Xhq3QY0QYJQZJZw",
+      databaseURL: "https://storyshare-demo-default-rtdb.firebaseio.com",
+      projectId: "storyshare-demo"
+    };
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    function App() {
+      const [currentUser, setCurrentUser] = useState(null);
+      const [username, setUsername] = useState('');
+      const [password, setPassword] = useState('');
+      const [authMode, setAuthMode] = useState('login');
+      const [error, setError] = useState('');
+      const [success, setSuccess] = useState('');
+      const [activeTab, setActiveTab] = useState('stories');
+      
+      // Story states
+      const [stories, setStories] = useState([]);
+      const [title, setTitle] = useState('');
+      const [content, setContent] = useState('');
+      
+      // Friend and chat states
+      const [users, setUsers] = useState([]);
+      const [friends, setFriends] = useState([]);
+      const [friendRequests, setFriendRequests] = useState([]);
+      const [chatWith, setChatWith] = useState(null);
+      const [messages, setMessages] = useState([]);
+      const [newMessage, setNewMessage] = useState('');
+      const chatContainerRef = useRef(null);
+      
+      // Authentication
+      const handleRegister = (e) => {
+        e.preventDefault();
+        setError('');
+        
+        if (!username || !password) {
+          setError('Username and password are required');
+          return;
+        }
+        
+        if (password.length < 6) {
+          setError('Password must be at least 6 characters');
+          return;
+        }
+        
+        // Check if username exists
+        database.ref('users').orderByChild('username').equalTo(username).once('value')
+          .then(snapshot => {
+            if (snapshot.exists()) {
+              setError('Username already taken');
+            } else {
+              // Create user
+              const newUserRef = database.ref('users').push();
+              const userId = newUserRef.key;
+              
+              newUserRef.set({
+                uid: userId,
+                username,
+                password: CryptoJS.SHA256(password).toString()
+              })
+              .then(() => {
+                setCurrentUser({
+                  uid: userId,
+                  username
+                });
+                setSuccess('Registration successful!');
+                setUsername('');
+                setPassword('');
+              });
+            }
+          })
+          .catch(err => {
+            setError('Database error');
+            console.error(err);
+          });
+      };
+      
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setError('');
+        
+        if (!username || !password) {
+          setError('Username and password are required');
+          return;
+        }
+        
+        database.ref('users').orderByChild('username').equalTo(username).once('value')
+          .then(snapshot => {
+            if (!snapshot.exists()) {
+              setError('Invalid username or password');
+              return;
+            }
+            
+            const userData = Object.values(snapshot.val())[0];
+            if (userData.password === CryptoJS.SHA256(password).toString()) {
+              setCurrentUser({
+                uid: userData.uid,
+                username: userData.username
+              });
+              setSuccess('Login successful!');
+              setUsername('');
+              setPassword('');
+            } else {
+              setError('Invalid username or password');
+            }
+          })
+          .catch(err => {
+            setError('Database error');
+            console.error(err);
+          });
+      };
+      
+      const handleLogout = () => {
+        setCurrentUser(null);
+        setChatWith(null);
+        setSuccess('Logged out successfully');
+      };
+      
+      // Load data
+      useEffect(() => {
+        // Load stories
+        database.ref('stories').on('value', (snapshot) => {
+          const storiesData = snapshot.val() || {};
+          setStories(Object.values(storiesData));
+        });
+        
+        // Load users
+        database.ref('users').on('value', (snapshot) => {
+          const usersData = snapshot.val() || {};
+          setUsers(Object.values(usersData));
+        });
+        
+        // Load friends if logged in
+        if (currentUser) {
+          database.ref(`friends/${currentUser.uid}`).on('value', (snapshot) => {
+            const friendsData = snapshot.val() || {};
+            setFriends(Object.keys(friendsData).filter(uid => friendsData[uid] === 'accepted'));
+            setFriendRequests(Object.keys(friendsData).filter(uid => friendsData[uid] === 'pending'));
+          });
+        }
+      }, [currentUser]);
+      
+      // Load messages when chatWith changes
+      useEffect(() => {
+        if (currentUser && chatWith) {
+          const chatId = [currentUser.uid, chatWith].sort().join('_');
+          database.ref(`messages/${chatId}`).on('value', (snapshot) => {
+            const messagesData = snapshot.val() || {};
+            setMessages(Object.values(messagesData));
+          });
+        }
+      }, [currentUser, chatWith]);
+      
+      // Auto-scroll chat
+      useEffect(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, [messages]);
+      
+      // Story functions
+      const handleSubmitStory = (e) => {
+        e.preventDefault();
+        setError('');
+        
+        if (!title || !content) {
+          setError('Title and content are required');
+          return;
+        }
+        
+        const newStory = {
+          title,
+          content,
+          author: currentUser.username,
+          authorId: currentUser.uid,
+          createdAt: Date.now()
+        };
+        
+        database.ref('stories').push(newStory)
+          .then(() => {
+            setSuccess('Story published successfully!');
+            setTitle('');
+            setContent('');
+          })
+          .catch(err => setError(err.message));
+      };
+      
+      // Friend functions
+      const sendFriendRequest = (friendUid) => {
+        database.ref(`friends/${friendUid}/${currentUser.uid}`).set('pending')
+          .then(() => setSuccess('Friend request sent!'))
+          .catch(err => setError(err.message));
+      };
+      
+      const acceptFriendRequest = (requesterUid) => {
+        database.ref(`friends/${currentUser.uid}/${requesterUid}`).set('accepted')
+          .then(() => {
+            database.ref(`friends/${requesterUid}/${currentUser.uid}`).set('accepted');
+            setSuccess('Friend request accepted!');
+          })
+          .catch(err => setError(err.message));
+      };
+      
+      // Chat functions
+      const sendMessage = (e) => {
+        e.preventDefault();
+        if (!newMessage.trim()) return;
+        
+        const chatId = [currentUser.uid, chatWith].sort().join('_');
+        const message = {
+          sender: currentUser.uid,
+          receiver: chatWith,
+          content: newMessage,
+          timestamp: Date.now(),
+          senderName: currentUser.username
+        };
+        
+        database.ref(`messages/${chatId}`).push(message)
+          .then(() => setNewMessage(''))
+          .catch(err => setError(err.message));
+      };
+      
+      return (
+        <div className="container">
+          {!currentUser ? (
+            <div className="auth-container">
+              <div className="auth-form">
+                <h2>{authMode === 'login' ? 'Login' : 'Register'}</h2>
+                {error && <div className="alert alert-error">{error}</div>}
+                {success && <div className="alert alert-success">{success}</div>}
+                
+                <form onSubmit={authMode === 'login' ? handleLogin : handleRegister}>
+                  <div className="form-group">
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Username"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <input
+                      type="password"
+                      className="form-control"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password"
+                      required
+                    />
+                  </div>
+                  <button type="submit" className="btn btn-block">
+                    {authMode === 'login' ? 'Login' : 'Register'}
+                  </button>
+                </form>
+                
+                <div className="text-center mt-3">
+                  <span 
+                    className="text-link"
+                    onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                  >
+                    {authMode === 'login' ? 'Need an account? Register' : 'Already have an account? Login'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="app">
+              <header>
+                <div className="logo">StoryShare</div>
+                <div className="user-info">
+                  <span>Welcome, <strong>{currentUser.username}</strong></span>
+                  <button className="btn" onClick={handleLogout}>Logout</button>
+                </div>
+              </header>
+              
+              <div className="tabs">
+                <div 
+                  className={`tab ${activeTab === 'stories' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('stories')}
+                >
+                  Stories
+                </div>
+                <div 
+                  className={`tab ${activeTab === 'friends' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('friends')}
+                >
+                  Friends
+                </div>
+                <div 
+                  className={`tab ${activeTab === 'chat' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('chat')}
+                >
+                  Chat
+                </div>
+              </div>
+              
+              {error && <div className="alert alert-error">{error}</div>}
+              {success && <div className="alert alert-success">{success}</div>}
+              
+              <div className="main-content">
+                <div className="content-area">
+                  {/* Stories Tab */}
+                  {activeTab === 'stories' && (
+                    <div>
+                      <div className="story-editor">
+                        <h2>Create New Story</h2>
+                        <form onSubmit={handleSubmitStory}>
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={title}
+                              onChange={(e) => setTitle(e.target.value)}
+                              placeholder="Title"
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <textarea
+                              className="editor-textarea"
+                              value={content}
+                              onChange={(e) => setContent(e.target.value)}
+                              placeholder="Write your story here..."
+                              required
+                            />
+                          </div>
+                          <button type="submit" className="btn">Publish Story</button>
+                        </form>
+                      </div>
+                      
+                      <h2>Story History</h2>
+                      {stories.length === 0 ? (
+                        <p>No stories yet. Be the first to share!</p>
+                      ) : (
+                        [...stories]
+                          .sort((a, b) => b.createdAt - a.createdAt)
+                          .map((story, index) => (
+                            <div key={index} className="story">
+                              <h3>{story.title}</h3>
+                              <div className="story-meta">By {story.author}</div>
+                              <div className="story-content">{story.content}</div>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Friends Tab */}
+                  {activeTab === 'friends' && (
+                    <div>
+                      <div className="friends-list">
+                        <h2>Your Friends</h2>
+                        {friends.length === 0 ? (
+                          <p>No friends yet</p>
+                        ) : (
+                          <div>
+                            {friends.map(friendUid => {
+                              const friend = users.find(u => u.uid === friendUid);
+                              if (!friend) return null;
+                              return (
+                                <div key={friendUid} className="friend-item">
+                                  <span>{friend.username}</span>
+                                  <button 
+                                    className="btn"
+                                    onClick={() => {
+                                      setChatWith(friendUid);
+                                      setActiveTab('chat');
+                                    }}
+                                  >
+                                    Chat
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="friends-list">
+                        <h2>Friend Requests</h2>
+                        {friendRequests.length === 0 ? (
+                          <p>No pending requests</p>
+                        ) : (
+                          <div>
+                            {friendRequests.map(requesterUid => {
+                              const requester = users.find(u => u.uid === requesterUid);
+                              if (!requester) return null;
+                              return (
+                                <div key={requesterUid} className="friend-item">
+                                  <span>{requester.username}</span>
+                                  <button 
+                                    className="btn"
+                                    onClick={() => acceptFriendRequest(requesterUid)}
+                                  >
+                                    Accept
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="friends-list">
+                        <h2>Find Friends</h2>
+                        {users
+                          .filter(user => 
+                            user.uid !== currentUser.uid &&
+                            !friends.includes(user.uid) &&
+                            !friendRequests.includes(user.uid)
+                          )
+                          .map(user => (
+                            <div key={user.uid} className="friend-item">
+                              <span>{user.username}</span>
+                              <button 
+                                className="btn"
+                                onClick={() => sendFriendRequest(user.uid)}
+                              >
+                                Add Friend
+                              </button>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Chat Tab */}
+                  {activeTab === 'chat' && (
+                    <div className="chat-container">
+                      <h2>Chat {chatWith && `with ${users.find(u => u.uid === chatWith)?.username || 'User'}`}</h2>
+                      
+                      {!chatWith ? (
+                        <p>Select a friend to start chatting</p>
+                      ) : (
+                        <>
+                          <div className="chat-messages" ref={chatContainerRef}>
+                            {messages
+                              .sort((a, b) => a.timestamp - b.timestamp)
+                              .map((message, index) => (
+                                <div 
+                                  key={index} 
+                                  className={`message ${
+                                    message.sender === currentUser.uid 
+                                      ? 'message-sent' 
+                                      : 'message-received'
+                                  }`}
+                                >
+                                  <div>{message.content}</div>
+                                </div>
+                              ))
+                            }
+                          </div>
+                          
+                          <form onSubmit={sendMessage} className="chat-input">
+                            <input
+                              type="text"
+                              value={newMessage}
+                              onChange={(e) => setNewMessage(e.target.value)}
+                              placeholder="Type your message..."
+                              required
+                            />
+                            <button type="submit" className="btn">Send</button>
+                          </form>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="sidebar">
+                  <div className="friends-list">
+                    <h3>Online Friends</h3>
+                    {friends.length === 0 ? (
+                      <p>No friends online</p>
+                    ) : (
+                      <div>
+                        {friends.map(friendUid => {
+                          const friend = users.find(u => u.uid === friendUid);
+                          if (!friend) return null;
+                          return (
+                            <div key={friendUid} className="friend-item">
+                              <span>{friend.username}</span>
+                              <button 
+                                className="btn"
+                                onClick={() => {
+                                  setChatWith(friendUid);
+                                  setActiveTab('chat');
+                                }}
+                              >
+                                Chat
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
